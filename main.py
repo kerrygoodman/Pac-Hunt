@@ -1,5 +1,6 @@
-import os
 import pygame
+import os
+import sys
 
 # 1. Asset Path Configuration 
 GAME_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -130,3 +131,42 @@ def main():
 
     ghost = Ghost(2 * TILE_SIZE, 2 * TILE_SIZE, GHOST_COLOR, speed=4)
     pacman = Pacman(8 * TILE_SIZE, 6 * TILE_SIZE, PACMAN_COLOR, speed=3)
+    
+    all_sprites = pygame.sprite.Group(ghost, pacman)
+    
+    catches = 0
+    running = True
+    while running:
+        dt = clock.tick(FPS)
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                
+        keys = pygame.key.get_pressed()
+        ghost.handle_input(keys, walls)
+        pacman.update_ai(walls)
+        
+        if ghost.rect.colliderect(pacman.rect):
+            catches += 1 #Reset positions when you catch Pac-Man
+            ghost.rect.topleft = (2 * TILE_SIZE, 2 * TILE_SIZE)
+            pacman.rect.topleft = (8 * TILE_SIZE, 6 * TILE_SIZE)
+            
+        screen.fill(BG_COLOR)
+        
+        #Draw walls
+        for wall in walls:
+            pygame.draw.rect(screen, (100, 100, 100), wall)
+            
+        all_sprites.draw(screen)
+        
+        text = font.render(f"Catches: {catches}", True, (255, 255, 255))
+        screen.blit(text, (10, 10))
+        
+        pygame.display.flip()
+        
+    pygame.quit()
+    sys.exit()
+    
+if __name__ == "__main__":
+    main()
