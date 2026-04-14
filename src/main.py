@@ -201,6 +201,9 @@ def main():
         #Draw walls
         for wall in walls:
             pygame.draw.rect(screen, (0, 0, 225), wall)
+        #Draw pellets
+        for pellet in pellets:
+            pygame.draw.ellipse(screen, (255, 255, 255), pellet)
             
         all_sprites.draw(screen)
         
