@@ -1,6 +1,7 @@
 import pygame
 import os
 import sys
+import random
 
 # 1. Asset Path Configuration 
 GAME_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -50,7 +51,7 @@ FPS = 60
 BG_COLOR = (0, 0, 0)
 GHOST_COLOR = (0, 255, 255)
 PACMAN_COLOR = (255, 255, 0)
-TILE_SIZE = 64
+TILE_SIZE = 32
 # Maze Layout: each character is one TILE
 # w = wall, . = pellet, ' ' = empty space, G = ghost start, P = pacman start
 MAZE_LAYOUT = [
@@ -103,7 +104,7 @@ class Character(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
         self.speed = speed
-        self.dir = pygame.math.Vector2(0,0) #Current Direction
+        self.dir = pygame.math.Vector2(0, 0) #Current Direction
         
 
     def move(self, dx, dy, walls):
@@ -126,17 +127,44 @@ class Ghost(Character):
             dy = -1
         elif keys[pygame.K_DOWN]:
             dy = 1
+            
         if dx != 0 or dy != 0:
-            self.move(dx, dy, walls)
+            self.dir.update(dx, dy)
+            self.move_grid(walls)
+    def move_grid(self, walls):
+        new_rect = self.rect.move(self.dir.x * TILE_SIZE, self.dir.y * TILE_SIZE)
+        for wall in walls:
+            if new_rect.colliderect(wall):
+                return
+        self.rect = new_rect
 
 
 class Pacman(Character):
+    def __init__(self, x, y, color, speed):
+        super().__init__(x, y, color, speed)
+        self.dir = pygame.math.Vector2(1, 0) #Start moving right
+    def possible_directions(self,walls):
+        dirs = []
+        for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+            new_rect = self.rect.move(dx * TILE_SIZE, dy * TILE_SIZE)
+            blocked = any(new_rect.colliderect(wall) for wall in walls)
+            if not blocked:
+                dirs.append(pygame.math.Vector2(dx, dy))
+        return dirs
+    def choose_direction(self, walls):
+        options = self.possible_directions(walls)
+        straight_ok = any(d == self.dir for d in options)
+        if straight_ok:
+            return self.dir
+        if options:
+            return random.choice(options)
+        return pygame.math.Vector2(0,0)
     def update_ai(self, walls):
-        # Temporary: somewhat random wobble movement
-        # Will replace with smater movement later
-        import random
-        dx, dy = random.choice([(1,0), (-1,0), (0,1), (0,-1), (0, 0)])
-        self.move(dx, dy, walls)
+        self.dir = self.choose_direction(walls)
+        new_rect = self.rect.move(self.dir.x * TILE_SIZE, self.dir.y * TILE_SIZE)
+        blocked = any(new_rect.colliderect(wall) for wall in walls)
+        if not blocked:
+            self.rect = new_rect
 
 
 def create_simple_maze():
