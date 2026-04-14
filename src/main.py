@@ -31,17 +31,17 @@ pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
 MAZE_LAYOUT = [
     "WWWWWWWWWWWWWWWWWWWW",  # 20 W's (top border)
     "W........W......PGWW",
-    "W.WWWW.W.WWWW.W...W",
-    "W.W....W....W.W...W",
-    "W.W.WWWWWW.WW.W...W",
+    "W.WWWW.W.WWWW.W..WW",
+    "W.W....W....W.W..WW",
+    "W.W.WWWWWW.WW.W..WW",
     "W...............WWW",
-    "W.W.WW.WWW.WW.W...W",
-    "W.W..G.....G..W...W",
-    "W.WWWW.W.WWWW.W...W",
+    "W.W.WW.WWW.WW.W..WW",
+    "W.W..G.....G..W..WW",
+    "W.WWWW.W.WWWW.W..WW",
     "W......W........WW",
-    "W.WWWW.W.WWWW.W...W",
-    "W.W....W....W.W...W",
-    "W.W.WWWWWW.WW.W...W",
+    "W.WWWW.W.WWWW.W..WW",
+    "W.W....W....W.W..WW",
+    "W.W.WWWWWW.WW.W..WW",
     "W...............WW",
     "WWWWWWWWWWWWWWWWWWWW",  # 20 W's (bottom border)
 ]
