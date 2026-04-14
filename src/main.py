@@ -50,7 +50,7 @@ FPS = 60
 BG_COLOR = (0, 0, 0)
 GHOST_COLOR = (0, 255, 255)
 PACMAN_COLOR = (255, 255, 0)
-TILE_SIZE = 32
+TILE_SIZE = 64
 # Maze Layout: each character is one TILE
 # w = wall, . = pellet, ' ' = empty space, G = ghost start, P = pacman start
 MAZE_LAYOUT = [
