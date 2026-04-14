@@ -21,18 +21,6 @@ pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
 clock = pygame.time.Clock()
 running = True
 
-# Main Game Loop
-while running:
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            
-    clock.tick(60)  # Limit the frame rate to 60 FPS
-    screen.fill((0, 0, 0))  # Clear the screen with black
-    pygame.display.flip()  # Update the display
-    
-pygame.quit()
 
 
 class Game:
