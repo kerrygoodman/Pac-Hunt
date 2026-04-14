@@ -13,38 +13,6 @@ def get_asset_path(filename: str) -> str:
 #Initialize Pygame
 pygame.init()
 
-SCREEN_Width = 640
-SCREEN_Height = 480
-screen = pygame.display.set_mode((SCREEN_Width, SCREEN_Height))
-pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
-
-#Game Loop Variables
-clock = pygame.time.Clock()
-running = True
-
-
-class Game:
-    def __init__(self):
-        self.level = Level("level1.txt")
-        self.ghosts = [Ghost(self.level.ghost_start)]
-        self.pacman = Pacman(self.level.pacman_start)
-        self.score = 0
-
-    def update(self, dt):
-        self.ghosts[0].update(dt, self.level)
-        self.pacman.update(dt, self.level)
-        if self.ghosts[0].collides_with(self.pacman):
-            self.handle_catch()
-
-    def draw(self, screen):
-        self.level.draw(screen)
-        self.pacman.draw(screen)
-        for g in self.ghosts:
-            g.draw(screen)
-    def handle_catch(self):        print("Pacman caught! Game Over.")
-        # Reset game or end it as needed  
-
-
 # Game Constants
 WIDTH, HEIGHT = 640, 480
 FPS = 60
@@ -52,15 +20,20 @@ BG_COLOR = (0, 0, 0)
 GHOST_COLOR = (0, 255, 255)
 PACMAN_COLOR = (255, 255, 0)
 TILE_SIZE = 32
+
+screen = pygame.display.set_mode((SCREEN_Width, SCREEN_Height))
+pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
+
+
 # Maze Layout: each character is one TILE
 # w = wall, . = pellet, ' ' = empty space, G = ghost start, P = pacman start
 MAZE_LAYOUT = [
     "wwwwwwwwwwwwwwww",
-    "w......W......Pw",
+    "w.......W......Pw",
     "w.WWWW.W.WWWW.W.W",
     "W.W....W....W.W.w",
     "W.W.WWWWWW.WW.W.w",
-    "w..............w",
+    "w...............w",
     "w.W.WW.WWW.WW.W.W",
     "W.W..G.....G..W.W",
     "W.WWWW.W.WWWW.W.W",
@@ -86,16 +59,15 @@ def build_level_from_layout(layout):
             if ch == 'W':
                 walls.append(pygame.Rect(x, y, TILE_SIZE, TILE_SIZE))
             elif ch == '.':
-                pellets.append(pygame.Rect(x + TILE_SIZE//4, y + TILE_SIZE//4, TILE_SIZE//2, TILE_SIZE//2))
+                pellets.append(pygame.Rect(x + TILE_SIZE // 4, y + TILE_SIZE // 4, TILE_SIZE // 2, TILE_SIZE //2 ))
             elif ch == 'G':
                 ghost_starts.append((x, y))
             elif ch == "P":
                 pacman_start = (x, y)
+    
     return walls, pellets, ghost_starts, pacman_start
         
-    
-
-
+        
 class Character(pygame.sprite.Sprite):
     def __init__(self, x, y, color, speed):
         super().__init__()
@@ -106,7 +78,6 @@ class Character(pygame.sprite.Sprite):
         self.speed = speed
         self.dir = pygame.math.Vector2(0, 0) #Current Direction
         
-
     def move(self, dx, dy, walls):
         new_rect = self.rect.move(dx * self.speed, dy * self.speed)
             # Simple wall collision: shouldn't move if we would hit a wall
@@ -131,6 +102,7 @@ class Ghost(Character):
         if dx != 0 or dy != 0:
             self.dir.update(dx, dy)
             self.move_grid(walls)
+
     def move_grid(self, walls):
         new_rect = self.rect.move(self.dir.x * TILE_SIZE, self.dir.y * TILE_SIZE)
         for wall in walls:
@@ -143,6 +115,7 @@ class Pacman(Character):
     def __init__(self, x, y, color, speed):
         super().__init__(x, y, color, speed)
         self.dir = pygame.math.Vector2(1, 0) #Start moving right
+    
     def possible_directions(self,walls):
         dirs = []
         for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
@@ -151,6 +124,7 @@ class Pacman(Character):
             if not blocked:
                 dirs.append(pygame.math.Vector2(dx, dy))
         return dirs
+    
     def choose_direction(self, walls):
         options = self.possible_directions(walls)
         straight_ok = any(d == self.dir for d in options)
@@ -159,24 +133,14 @@ class Pacman(Character):
         if options:
             return random.choice(options)
         return pygame.math.Vector2(0,0)
+    
     def update_ai(self, walls):
+        #Decide next direction and move one tile
         self.dir = self.choose_direction(walls)
         new_rect = self.rect.move(self.dir.x * TILE_SIZE, self.dir.y * TILE_SIZE)
         blocked = any(new_rect.colliderect(wall) for wall in walls)
         if not blocked:
             self.rect = new_rect
-
-
-def create_simple_maze():
-    walls = []
-    #Border walls
-    for x in range(0, WIDTH, TILE_SIZE):
-        walls.append(pygame.Rect(x, 0, TILE_SIZE, TILE_SIZE))
-        walls.append(pygame.Rect(x, HEIGHT - TILE_SIZE, TILE_SIZE, TILE_SIZE))
-    for y in range(0, HEIGHT, TILE_SIZE):
-        walls.append(pygame.Rect(0, y, TILE_SIZE, TILE_SIZE))
-        walls.append(pygame.Rect(WIDTH - TILE_SIZE, y, TILE_SIZE, TILE_SIZE))
-    return walls
 
 
 def main():
@@ -188,6 +152,11 @@ def main():
 
     walls, pellets, ghost_starts, pacman_start = build_level_from_layout(MAZE_LAYOUT)
 
+    if not ghost_starts or pacman_start is None:
+        print("Error: Maze layout must have at least one ghost start (G) and one pacman start (P).")
+        pygame.quit()
+        sys.exit()
+        
     ghost = Ghost(*ghost_starts[0], GHOST_COLOR, speed=2)
     pacman = Pacman(*pacman_start, PACMAN_COLOR, speed=2)
     
@@ -195,6 +164,9 @@ def main():
     
     catches = 0
     running = True
+    pacman_timer = 0
+    pacman_step_delay = 200 #ms between Pac-Man moves
+    
     while running:
         dt = clock.tick(FPS)
         pacman_timer += dt
@@ -220,6 +192,7 @@ def main():
         #Draw walls
         for wall in walls:
             pygame.draw.rect(screen, (0, 0, 225), wall)
+        
         #Draw pellets
         for pellet in pellets:
             pygame.draw.ellipse(screen, (255, 255, 255), pellet)
@@ -233,6 +206,5 @@ def main():
         
     pygame.quit()
     sys.exit()
-    
 if __name__ == "__main__":
     main()
