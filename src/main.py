@@ -22,7 +22,6 @@ clock = pygame.time.Clock()
 running = True
 
 
-
 class Game:
     def __init__(self):
         self.level = Level("level1.txt")
