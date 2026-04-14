@@ -116,6 +116,8 @@ class Character(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
         self.speed = speed
+        self.dir = pygame.math.Vector2(0,0) #Current Direction
+        
 
     def move(self, dx, dy, walls):
         new_rect = self.rect.move(dx * self.speed, dy * self.speed)
@@ -169,10 +171,10 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 24)
 
-    walls = create_simple_maze()
+    walls, pellets, ghost_starts, pacman_start = build_level_from_layout(MAZE_LAYOUT)
 
-    ghost = Ghost(2 * TILE_SIZE, 2 * TILE_SIZE, GHOST_COLOR, speed=4)
-    pacman = Pacman(8 * TILE_SIZE, 6 * TILE_SIZE, PACMAN_COLOR, speed=3)
+    ghost = Ghost(*ghost_starts[0], GHOST_COLOR, speed=2)
+    pacman = Pacman(*pacman_start, PACMAN_COLOR, speed=2)
     
     all_sprites = pygame.sprite.Group(ghost, pacman)
     
