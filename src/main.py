@@ -28,17 +28,17 @@ pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
 # Maze Layout: each character is one TILE
 # w = wall, . = pellet, ' ' = empty space, G = ghost start, P = pacman start
 MAZE_LAYOUT = [
-    "wwwwwwwwwwwwwwww",
-    "w.......W......Pw",
-    "w.WWWW.W.WWWW.W.W",
-    "W.W....W....W.W.w",
-    "W.W.WWWWWW.WW.W.w",
-    "w...............w",
-    "w.W.WW.WWW.WW.W.W",
-    "W.W..G.....G..W.W",
-    "W.WWWW.W.WWWW.W.W",
-    "W......W.......WW",
-    "wwwwwwwwwwwwwwww"
+    "WWWWWWWWWWWWWWWWWWW",
+    "W........W......PGW",
+    "W.WWWW.W.WWWW.W..W",
+    "W.W....W....W.W..W",
+    "W.W.WWWWWW.WW.W..W",
+    "W...............WW",
+    "W.W.WW.WWW.WW.W..W",
+    "W.W..G.....G..W..W",
+    "W.WWWW.W.WWWW.W..W",
+    "W......W........WW",
+    "WWWWWWWWWWWWWWWWWWW",
 ]
 
 def build_level_from_layout(layout):
