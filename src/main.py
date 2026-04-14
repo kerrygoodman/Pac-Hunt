@@ -27,6 +27,7 @@ pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
 
 # Maze Layout: each character is one TILE
 # w = wall, . = pellet, ' ' = empty space, G = ghost start, P = pacman start
+# 20 columns wide, 15 rows tall (640x480 with TILE_SIZE = 32)
 MAZE_LAYOUT = [
     "WWWWWWWWWWWWWWWWWWWW",  # 20 W's (top border)
     "W........W......PGWW",
