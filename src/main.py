@@ -30,19 +30,21 @@ pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
 # 20 columns wide, 15 rows tall (640x480 with TILE_SIZE = 32)
 MAZE_LAYOUT = [
     "WWWWWWWWWWWWWWWWWWWW",  # 20 W's (top border)
+
     "W........W......PGWW",
-    "W.WWWW.W.WWWW.W..WW",
-    "W.W....W....W.W..WW",
-    "W.W.WWWWWW.WW.W..WW",
+    "W.WWWW.W.WWWW.W...WW",
+    "W.W....W....W.W...WW",
+    "W.W.WWWWWW.WW.W...WW",
     "W...............WWW",
-    "W.W.WW.WWW.WW.W..WW",
-    "W.W..G.....G..W..WW",
-    "W.WWWW.W.WWWW.W..WW",
-    "W......W........WW",
-    "W.WWWW.W.WWWW.W..WW",
-    "W.W....W....W.W..WW",
-    "W.W.WWWWWW.WW.W..WW",
-    "W...............WW",
+    "W.W.WW.WWW.WW.W...WW",
+    "W.W..G.....G..W...WW",
+    "W.WWWW.W.WWWW.W...WW",
+    "W......W........WWW",
+    "W.WWWW.W.WWWW.W...WW",
+    "W.W....W....W.W...WW",
+    "W.W.WWWWWW.WW.W...WW",
+    "W...............WWW",
+
     "WWWWWWWWWWWWWWWWWWWW",  # 20 W's (bottom border)
 ]
 
@@ -54,6 +56,7 @@ def build_level_from_layout(layout):
     
     rows = len(layout)
     cols = len(layout[0])
+    print("Row lengths:", [len(r) for r in layout])
     
     for row in range(rows):
         for col in range(cols):
