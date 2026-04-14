@@ -64,6 +64,48 @@ BG_COLOR = (0, 0, 0)
 GHOST_COLOR = (0, 255, 255)
 PACMAN_COLOR = (255, 255, 0)
 TILE_SIZE = 32
+# Maze Layout: each character is one TILE
+# w = wall, . = pellet, ' ' = empty space, G = ghost start, P = pacman start
+MAZE_LAYOUT = [
+    "wwwwwwwwwwwwwwww",
+    "w......W......Pw",
+    "w.WWWW.W.WWWW.W.W",
+    "W.W....W....W.W.w",
+    "W.W.WWWWWW.WW.W.w",
+    "w..............w",
+    "w.W.WW.WWW.WW.W.W",
+    "W.W..G.....G..W.W",
+    "W.WWWW.W.WWWW.W.W",
+    "W......W.......WW",
+    "wwwwwwwwwwwwwwww"
+]
+
+def build_level_from_layout(layout):
+    walls = []
+    pellets = []
+    ghost_starts = []
+    pacman_start = None
+    
+    rows = len(layout)
+    cols = len(layout[0])
+    
+    for row in range(rows):
+        for col in range(cols):
+            ch = layout[row][col]
+            x = col * TILE_SIZE
+            y = row * TILE_SIZE
+            
+            if ch == 'W':
+                walls.append(pygame.Rect(x, y, TILE_SIZE, TILE_SIZE))
+            elif ch == '.':
+                pellets.append(pygame.Rect(x + TILE_SIZE//4, y + TILE_SIZE//4, TILE_SIZE//2, TILE_SIZE//2))
+            elif ch == 'G':
+                ghost_starts.append((x, y))
+            elif ch == "P":
+                pacman_start = (x, y)
+    return walls, pellets, ghost_starts, pacman_start
+        
+    
 
 
 class Character(pygame.sprite.Sprite):
