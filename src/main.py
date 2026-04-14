@@ -156,7 +156,7 @@ def main():
         
         #Draw walls
         for wall in walls:
-            pygame.draw.rect(screen, (100, 100, 100), wall)
+            pygame.draw.rect(screen, (0, 0, 225), wall)
             
         all_sprites.draw(screen)
         
