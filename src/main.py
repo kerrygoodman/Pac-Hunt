@@ -21,7 +21,7 @@ GHOST_COLOR = (0, 255, 255)
 PACMAN_COLOR = (255, 255, 0)
 TILE_SIZE = 32
 
-screen = pygame.display.set_mode((Width, Height))
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
 
 
