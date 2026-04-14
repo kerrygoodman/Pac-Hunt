@@ -3,7 +3,7 @@ import os
 import sys
 import random
 
-# 1. Asset Path Configuration 
+# Asset Path Configuration 
 GAME_PATH = os.path.dirname(os.path.abspath(__file__))
 
 def get_asset_path(filename: str) -> str:
@@ -197,6 +197,7 @@ def main():
     running = True
     while running:
         dt = clock.tick(FPS)
+        pacman_timer += dt
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -204,12 +205,15 @@ def main():
                 
         keys = pygame.key.get_pressed()
         ghost.handle_input(keys, walls)
-        pacman.update_ai(walls)
         
+        if pacman_timer >= pacman_step_delay:
+            pacman.update_ai(walls)
+            pacman_timer = 0
+            
         if ghost.rect.colliderect(pacman.rect):
             catches += 1 #Reset positions when you catch Pac-Man
-            ghost.rect.topleft = (2 * TILE_SIZE, 2 * TILE_SIZE)
-            pacman.rect.topleft = (8 * TILE_SIZE, 6 * TILE_SIZE)
+            ghost.rect.topleft = ghost_starts[0]
+            pacman.rect.topleft = pacman_start
             
         screen.fill(BG_COLOR)
         
