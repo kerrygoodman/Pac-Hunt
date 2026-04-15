@@ -217,6 +217,11 @@ class Game:
         if self.pacman_timer >= self.pacman_step_delay:
             self.pacman.update_ai(self.level.walls)
             self.pacman_timer = 0
+        
+        #Pac-Man eats the pellets he touches
+        for pellet in self.level.pellets[:]:
+            if self.pacman.rect.colliderect(pellet):
+                self.level.pellets.remove(pellet)
             
         #Collisions: ghost catches Pac-Man
         if self.ghost.collides_with(self.pacman):
@@ -284,6 +289,9 @@ def main():
                     game.reset_game()
                     
         game.update(dt)
+        # Lose condition: Pac-Man eats all the pellets
+        if not self.level.pellets:
+            self.state = "lost"
         game.draw(screen, font)
         
         pygame.display.flip()
