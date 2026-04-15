@@ -10,6 +10,12 @@ def get_asset_path(filename: str) -> str:
     '''Returns the path to an asset file, given its filename.'''
     return os.path.join(GAME_PATH, "assets", filename)
 
+def load_sprite(name, size):
+    """Load an image from assets and scale it to (size, size)."""
+    path = get_asset_path(name)
+    image = pygame.image.load(path).convert_alpha()
+    return pygame.transform.scale(image, (size, size))
+
 #Initialize Pygame
 pygame.init()
 
@@ -31,13 +37,13 @@ pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
 MAZE_LAYOUT = [
     "WWWWWWWWWWWWWWWWWWWW",  # 20 W's (top border)
 
-    "W........W......PGWW",
+    "W........W.P.......W",
     "W.WWWW.W.WWWW.W...WW",
     "W.W....W....W.W...WW",
     "W.W.WWWWWW.WW.W...WW",
     "W................WWW",
     "W.W.WW.WWW.WW.W...WW",
-    "W.W..G.....G..W...WW",
+    "W.W..G.........G..WW",
     "W.WWWW.W.WWWW.W...WW",
     "W.......W........WWW",
     "W.WWWW.W.WWWW.W...WW",
@@ -74,12 +80,28 @@ def build_level_from_layout(layout):
     
     return walls, pellets, ghost_starts, pacman_start
         
+class Level:
+    def __init__(self, layout):
+        (self.walls, self.pellets, self.ghost_starts, self.pacman_start) = build_level_from_layout(layout)
+        
+        #Save original pellet layout so they can respawn each round
+        self.initial_pellets = list(self.pellets)
+    
+    def draw(self, screen):
+        for wall in self.walls:
+            pygame.draw.rect(screen, (0, 0, 225), wall)
+        for pellet in self.pellets:
+            pygame.draw.ellipse(screen, (255, 255, 255), pellet)
+            
         
 class Character(pygame.sprite.Sprite):
-    def __init__(self, x, y, color, speed):
+    def __init__(self, x, y, color, speed, image=None):
         super().__init__()
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        self.image.fill(color)
+        if image is None:
+            self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
+            self.image.fill(color)
+        else:
+            self.image = image
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
         self.speed = speed
@@ -92,9 +114,16 @@ class Character(pygame.sprite.Sprite):
             if new_rect.colliderect(wall):
                 return
         self.rect = new_rect
+        
+    def collides_with(self, other):
+        return self.rect.colliderect(other.rect)
 
 
 class Ghost(Character):
+    def __init__(self, x, y, color, speed):
+        ghost_image = load_sprite("ghost.png", TILE_SIZE)
+        super().__init__(x, y, color, speed, image=ghost_image)
+        
     def handle_input(self, keys, walls):
         dx = dy = 0
         if keys[pygame.K_LEFT]:
@@ -116,11 +145,26 @@ class Ghost(Character):
             if new_rect.colliderect(wall):
                 return
         self.rect = new_rect
+        
+    def update_ai(self, walls):
+        #Simple ghost AI: picks a random valid direction on occasion
+        if random.random() < 0.1: #10% chance to change direction each frame
+            options = []
+            for dx, dy in [(1,0), (-1,0), (0,1), (0,-1)]:
+                new_rect = self.rect.move(dx * TILE_SIZE, dy * TILE_SIZE)
+                if not any(new_rect.colliderect(w) for w in walls):
+                    options.append(pygame.math.Vector2(dx, dy))
+            if options:
+                self.dir = random.choice(options)
+                
+        #Move in current direction if possible
+        self.move_grid(walls)
 
 
 class Pacman(Character):
     def __init__(self, x, y, color, speed):
-        super().__init__(x, y, color, speed)
+        pacman_image = load_sprite("pacman.png", TILE_SIZE)
+        super().__init__(x, y, color, speed, image=pacman_image)
         self.dir = pygame.math.Vector2(1, 0) #Start moving right
     
     def possible_directions(self,walls):
@@ -134,12 +178,21 @@ class Pacman(Character):
     
     def choose_direction(self, walls):
         options = self.possible_directions(walls)
-        straight_ok = any(d == self.dir for d in options)
-        if straight_ok:
+        if not options:
+            return pygame.math.Vector2(0,0)
+        #If only one way to go, take it
+        if len(options) == 1:
+            return options[0]
+        #If can keep going straight, do it
+        #Remove the exact opposite direction to prevent continuos backtracking
+        opposite = pygame.math.Vector2(-self.dir.x, -self.dir.y)
+        options = [d for d in options if d != opposite] or options
+        #At an intersection, prefer straight but sometimes turn
+        straight_options = [d for d in options if d == self.dir]
+        if straight_options and random.random() < 0.7: #70% chance to keep straight
             return self.dir
-        if options:
-            return random.choice(options)
-        return pygame.math.Vector2(0,0)
+        #Otherwise choose remaining options (turn)
+        return random.choice(options) 
     
     def update_ai(self, walls):
         #Decide next direction and move one tile
@@ -149,6 +202,125 @@ class Pacman(Character):
         if not blocked:
             self.rect = new_rect
 
+class Game:
+    """High-level game controller: state, score, and drawing."""
+    
+    def __init__(self):
+        self.level = Level(MAZE_LAYOUT)
+        if not self.level.ghost_starts or self.level.pacman_start is None:
+            raise ValueError("Maze layout must have at least one ghost start (G) and one pacman start (P).")
+        
+        ghost_start_1 = self.level.ghost_starts[0]
+        ghost_start_2 = self.level.ghost_starts[1] if len(self.level.ghost_starts) > 1 else self.level.ghost_starts[0]
+        pac_start = self.level.pacman_start
+        
+        self.ghosts = [
+            Ghost(*ghost_start_1, GHOST_COLOR, speed=1),
+            Ghost(*ghost_start_2, GHOST_COLOR, speed=1),
+        ]
+
+        
+        self.active_ghost_index = 0 #Start controlling 1st ghost
+        self.pacman = Pacman(*pac_start, PACMAN_COLOR, speed=3)
+        
+        self.sprites = pygame.sprite.Group(*self.ghosts, self.pacman)
+        
+        self.catches = 0
+        self.pacman_timer = 0
+        self.pacman_step_delay = 200 #ms between
+                
+        self.ghost_step_delay = 150 #ms between moves for player-controlled ghost
+        self.ghost_timer = 0
+        self.ai_ghost_step_delay = 250 # a slower AI ghost than original
+        self.ai_ghost_timer = 0
+        
+        #Game state: "start", "playing", "won", "lost"
+        self.state = "start"
+        self.max_catches_to_win = 3
+        
+    def reset_game(self):
+        """Reset entire game: score and positions."""
+        self.catches = 0
+        self.state = "playing"
+        self.reset_round()
+        
+    def update(self, dt):
+        if self.state != "playing":
+            return
+        
+        self.pacman_timer += dt
+        self.ghost_timer += dt
+        self.ai_ghost_timer += dt
+        
+        keys = pygame.key.get_pressed()
+        
+        for i, ghost in enumerate(self.ghosts):
+            if i == self.active_ghost_index:
+                #The player controlled ghost
+                if self.ghost_timer >= self.ghost_step_delay:
+                    ghost.handle_input(keys, self.level.walls)
+                    self.ghost_timer = 0
+            else:
+                #The AI controlled ghost
+                if self.ai_ghost_timer >= self.ai_ghost_step_delay:
+                    ghost.update_ai(self.level.walls)
+                    self.ai_ghost_timer = 0
+
+        if self.pacman_timer >= self.pacman_step_delay:
+            self.pacman.update_ai(self.level.walls)
+            self.pacman_timer = 0
+        
+        #Pac-Man eats the pellets he touches
+        for pellet in self.level.pellets[:]:
+            if self.pacman.rect.colliderect(pellet):
+                self.level.pellets.remove(pellet)
+            
+        #Collisions: ghost catches Pac-Man
+        for ghost in self.ghosts:
+            if ghost.collides_with(self.pacman):
+                self.catches += 1
+                if self.catches >= self.max_catches_to_win:
+                    self.state = "won"
+                else:
+                    self.reset_round()
+                break
+                
+        #Lose condition: Pac-Man eats all pellets
+        if not self.level.pellets:
+            self.state = "lost"
+            
+    def draw(self, screen, font):
+        screen.fill(BG_COLOR)
+        
+        if self.state == "start":
+            title = font.render("Pac-Hunt: Press SPACE to start", True, (255, 255, 255))
+            info = font.render("You are the ghost. Catch Pac-Man!", True, (255, 255, 255))
+            screen.blit(title, (40, HEIGHT // 2 - 20))
+            screen.blit(info, (80, HEIGHT // 2 + 10))
+            return
+        
+        self.level.draw(screen)
+        self.sprites.draw(screen)
+        
+        text = font.render(f"Catches: {self.catches}", True, (255, 255, 255))
+        screen.blit(text, (10, 10))
+        
+        if self.state == "won":
+            msg = font.render("You WON! Press R to restart.", True, (0, 255, 0))
+            screen.blit(msg, (80, HEIGHT // 2))
+        elif self.state == "lost":
+            msg = font.render("You LOST! Press R to restart.", True, (255, 0, 0))
+            screen.blit(msg, (80, HEIGHT // 2))
+    
+    def reset_round(self):
+        """Reset positions after a catch without resetting score."""
+        for i, pos in enumerate(self.level.ghost_starts[:len(self.ghosts)]):
+            self.ghosts[i].rect.topleft = pos
+        self.pacman.rect.topleft = self.level.pacman_start
+        self.pacman_timer = 0
+        # Respawn pellets for the new round
+        self.level.pellets = list(self.level.initial_pellets)
+            
 
 def main():
     pygame.init()
@@ -157,61 +329,39 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 24)
 
-    walls, pellets, ghost_starts, pacman_start = build_level_from_layout(MAZE_LAYOUT)
-
-    if not ghost_starts or pacman_start is None:
-        print("Error: Maze layout must have at least one ghost start (G) and one pacman start (P).")
+    try:
+        game = Game()
+    except ValueError as e:
+        print(e)
         pygame.quit()
         sys.exit()
         
-    ghost = Ghost(*ghost_starts[0], GHOST_COLOR, speed=2)
-    pacman = Pacman(*pacman_start, PACMAN_COLOR, speed=2)
-    
-    all_sprites = pygame.sprite.Group(ghost, pacman)
-    
-    catches = 0
     running = True
-    pacman_timer = 0
-    pacman_step_delay = 200 #ms between Pac-Man moves
-    
     while running:
         dt = clock.tick(FPS)
-        pacman_timer += dt
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
                 
-        keys = pygame.key.get_pressed()
-        ghost.handle_input(keys, walls)
-        
-        if pacman_timer >= pacman_step_delay:
-            pacman.update_ai(walls)
-            pacman_timer = 0
-            
-        if ghost.rect.colliderect(pacman.rect):
-            catches += 1 #Reset positions when you catch Pac-Man
-            ghost.rect.topleft = ghost_starts[0]
-            pacman.rect.topleft = pacman_start
-            
-        screen.fill(BG_COLOR)
-        
-        #Draw walls
-        for wall in walls:
-            pygame.draw.rect(screen, (0, 0, 225), wall)
-        
-        #Draw pellets
-        for pellet in pellets:
-            pygame.draw.ellipse(screen, (255, 255, 255), pellet)
-            
-        all_sprites.draw(screen)
-        
-        text = font.render(f"Catches: {catches}", True, (255, 255, 255))
-        screen.blit(text, (10, 10))
+            if event.type == pygame.KEYDOWN:
+                if game.state == "start" and event.key == pygame.K_SPACE:
+                    game.state = "playing"
+                #From won/lost state, allow restart with R key
+                elif game.state in ["won", "lost"] and event.key == pygame.K_r:
+                    game.reset_game()
+                elif game.state == "playing" and event.key == pygame.K_TAB:
+                    #Switch which ghost is controlled by player
+                    game.active_ghost_index = (game.active_ghost_index + 1) % len(game.ghosts)
+                    
+        game.update(dt)
+        game.draw(screen, font)
         
         pygame.display.flip()
         
     pygame.quit()
     sys.exit()
+    
+    
 if __name__ == "__main__":
     main()
