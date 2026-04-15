@@ -199,7 +199,7 @@ class Game:
         ghost_start_2 = self.level.ghost_starts[1] if len(self.level.ghost_starts) > 1 else self.level.ghost_starts[0]
         pac_start = self.level.pacman_start
         
-        self.ghost = [
+        self.ghosts = [
             Ghost(*ghost_start_1, GHOST_COLOR, speed=2),
             Ghost(*ghost_start_2, GHOST_COLOR, speed=2),
         ]
