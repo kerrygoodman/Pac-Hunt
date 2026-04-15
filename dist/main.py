@@ -43,11 +43,11 @@ MAZE_LAYOUT = [
     "W.W.WWWWWW.WW.W...WW",
     "W................WWW",
     "W.W.WW.WWW.WW.W...WW",
-    "W.W..G.........G..WW",
+    "W.W..G............WW",
     "W.WWWW.W.WWWW.W...WW",
     "W.......W........WWW",
     "W.WWWW.W.WWWW.W...WW",
-    "W.W....W....W.W...WW",
+    "W.W....W.G..W.W...WW",
     "W.W.WWWWWW.WW.W...WW",
     "W................WWW",
 
