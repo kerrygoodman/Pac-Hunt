@@ -153,7 +153,7 @@ class Ghost(Character):
             for dx, dy in [(1,0), (-1,0), (0,1), (0,-1)]:
                 new_rect = self.rect.move(dx * TILE_SIZE, dy * TILE_SIZE)
                 if not any(new_rect.colliderect(w) for w in walls):
-                    options.append(pygame.math.Vectore2(dx, dy))
+                    options.append(pygame.math.Vector2(dx, dy))
             if options:
                 self.dir = random.choice(options)
                 
@@ -231,12 +231,6 @@ class Game:
         self.state = "start"
         self.max_catches_to_win = 3
         
-    def reset_round(self):
-        """Reset positions after a catch without resetting score."""
-        self.ghost.rect.topleft = self.level.ghost_starts[0]
-        self.pacman.rect.topleft = self.level.pacman_start
-        self.pacman_timer = 0
-        
     def reset_game(self):
         """Reset entire game: score and positions."""
         self.catches = 0
@@ -304,6 +298,7 @@ class Game:
         elif self.state == "lost":
             msg = font.render("You LOST! Press R to restart.", True, (255, 0, 0))
             screen.blit(msg, (80, HEIGHT // 2))
+    
     def reset_round(self):
         """Reset positions after a catch without resetting score."""
         for i, pos in enumerate(self.level.ghost_starts[:len(self.ghosts)]):
