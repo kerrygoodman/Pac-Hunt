@@ -215,9 +215,11 @@ class Game:
         pac_start = self.level.pacman_start
         
         self.ghosts = [
-            Ghost(*ghost_start_1, GHOST_COLOR, speed=2),
-            Ghost(*ghost_start_2, GHOST_COLOR, speed=2),
+            Ghost(*ghost_start_1, GHOST_COLOR, speed=1),
+            Ghost(*ghost_start_2, GHOST_COLOR, speed=1),
         ]
+
+        
         self.active_ghost_index = 0 #Start controlling 1st ghost
         self.pacman = Pacman(*pac_start, PACMAN_COLOR, speed=3)
         
@@ -226,6 +228,11 @@ class Game:
         self.catches = 0
         self.pacman_timer = 0
         self.pacman_step_delay = 200 #ms between
+                
+        self.ghost_step_delay = 150 #ms between moves for player-controlled ghost
+        self.ghost_timer = 0
+        self.ai_ghost_step_delay = 250 # a slower AI ghost than original
+        self.ai_ghost_timer = 0
         
         #Game state: "start", "playing", "won", "lost"
         self.state = "start"
@@ -242,17 +249,23 @@ class Game:
             return
         
         self.pacman_timer += dt
+        self.ghost_timer += dt
+        self.ai_ghost_timer += dt
         
         keys = pygame.key.get_pressed()
         
         for i, ghost in enumerate(self.ghosts):
             if i == self.active_ghost_index:
                 #The player controlled ghost
-                ghost.handle_input(keys, self.level.walls)
+                if self.ghost_timer >= self.ghost_step_delay:
+                    ghost.handle_input(keys, self.level.walls)
+                    self.ghost_timer = 0
             else:
                 #The AI controlled ghost
-                ghost.update_ai(self.level.walls)
-        
+                if self.ai_ghost_timer >= self.ai_ghost_step_delay:
+                    ghost.update_ai(self.level.walls)
+                    self.ai_ghost_timer = 0
+
         if self.pacman_timer >= self.pacman_step_delay:
             self.pacman.update_ai(self.level.walls)
             self.pacman_timer = 0
