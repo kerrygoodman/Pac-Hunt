@@ -104,10 +104,10 @@ class Character(pygame.sprite.Sprite):
             self.image.fill(color)
         else:
             self.image = image
-            self.rect = self.image.get_rect()
-            self.rect.topleft = (x, y)
-            self.speed = speed
-            self.dir = pygame.math.Vector2(0, 0) #Current Direction
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.speed = speed
+        self.dir = pygame.math.Vector2(0, 0) #Current Direction
         
     def move(self, dx, dy, walls):
         new_rect = self.rect.move(dx * self.speed, dy * self.speed)
