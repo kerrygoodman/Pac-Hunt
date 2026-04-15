@@ -123,6 +123,7 @@ class Ghost(Character):
     def __init__(self, x, y, color, speed):
         ghost_image = load_sprite("ghost.png", TILE_SIZE)
         super().__init__(x, y, color, speed, image=ghost_image)
+        
     def handle_input(self, keys, walls):
         dx = dy = 0
         if keys[pygame.K_LEFT]:
@@ -144,6 +145,20 @@ class Ghost(Character):
             if new_rect.colliderect(wall):
                 return
         self.rect = new_rect
+        
+    def update_ai(self, walls):
+        #Simple ghost AI: picks a random valid direction on occasion
+        if random.random() < 0.1: #10% chance to change direction each frame
+            options = []
+            for dx, dy in [(1,0), (-1,0), (0,1), (0,-1)]:
+                new_rect = self.rect.move(dx * TILE_SIZE, dy * TILE_SIZE)
+                if not any(new_rect.colliderect(w) for w in walls):
+                    options.append(pygame.math.Vectore2(dx, dy))
+            if options:
+                self.dir = random.choice(options)
+                
+        #Move in current direction if possible
+        self.move_grid(walls)
 
 
 class Pacman(Character):
@@ -235,7 +250,14 @@ class Game:
         self.pacman_timer += dt
         
         keys = pygame.key.get_pressed()
-        self.ghost.handle_input(keys, self.level.walls)
+        
+        for i, ghost in enumerate(self.ghosts):
+            if i == self.active_ghost_index:
+                #The player controlled ghost
+                ghost.handle_input(keys, self.level.walls)
+            else:
+                #The AI controlled ghost
+                ghost.update_ai(self.level.walls)
         
         if self.pacman_timer >= self.pacman_step_delay:
             self.pacman.update_ai(self.level.walls)
@@ -247,12 +269,14 @@ class Game:
                 self.level.pellets.remove(pellet)
             
         #Collisions: ghost catches Pac-Man
-        if self.ghost.collides_with(self.pacman):
-            self.catches += 1
-            if self.catches >= self.max_catches_to_win:
-                self.state = "won"
-            else:
-                self.reset_round()
+        for ghost in self.ghosts:
+            if ghost.collides_with(self.pacman):
+                self.catches += 1
+                if self.catches >= self.max_catches_to_win:
+                    self.state = "won"
+                else:
+                    self.reset_round()
+                break
                 
         #Lose condition: Pac-Man eats all pellets
         if not self.level.pellets:
@@ -282,7 +306,8 @@ class Game:
             screen.blit(msg, (80, HEIGHT // 2))
     def reset_round(self):
         """Reset positions after a catch without resetting score."""
-        self.ghost.rect.topleft = self.level.ghost_starts[0]
+        for i, pos in enumerate(self.level.ghost_starts[:len(self.ghosts)]):
+            self.ghosts[i].rect.topleft = pos
         self.pacman.rect.topleft = self.level.pacman_start
         self.pacman_timer = 0
         # Respawn pellets for the new round
