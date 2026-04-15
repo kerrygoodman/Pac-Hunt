@@ -13,10 +13,10 @@ def get_asset_path(filename: str) -> str:
     return os.path.join(GAME_PATH, "assets", filename)
 
 def load_sprite(name, size):
-    '''Load an image and scale it to the given size.'''
+    '''Load an image from assets and scale it to (size, size).'''
     path = get_asset_path(name)
     image = pygame.image.load(path).convert_alpha()
-    return pygame.transform.scale(image, size)
+    return pygame.transform.scale(image, (size, size))
 
 #Initialize Pygame
 pygame.init()
