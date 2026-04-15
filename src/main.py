@@ -1,5 +1,3 @@
-from email.mime import image
-
 import pygame
 import os
 import sys
@@ -13,7 +11,7 @@ def get_asset_path(filename: str) -> str:
     return os.path.join(GAME_PATH, "assets", filename)
 
 def load_sprite(name, size):
-    '''Load an image from assets and scale it to (size, size).'''
+    """Load an image from assets and scale it to (size, size)."""
     path = get_asset_path(name)
     image = pygame.image.load(path).convert_alpha()
     return pygame.transform.scale(image, (size, size))
@@ -97,7 +95,7 @@ class Level:
             
         
 class Character(pygame.sprite.Sprite):
-    def __init__(self, x, y, color, speed):
+    def __init__(self, x, y, color, speed, image=None):
         super().__init__()
         if image is None:
             self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
@@ -116,6 +114,7 @@ class Character(pygame.sprite.Sprite):
             if new_rect.colliderect(wall):
                 return
         self.rect = new_rect
+        
     def collides_with(self, other):
         return self.rect.colliderect(other.rect)
 
