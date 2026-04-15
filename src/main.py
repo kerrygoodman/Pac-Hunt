@@ -31,13 +31,13 @@ pygame.display.set_caption("Pac-Hunt: The Ghosts Strike Back")
 MAZE_LAYOUT = [
     "WWWWWWWWWWWWWWWWWWWW",  # 20 W's (top border)
 
-    "W........W......PGWW",
+    "W........W.P.......W",
     "W.WWWW.W.WWWW.W...WW",
     "W.W....W....W.W...WW",
     "W.W.WWWWWW.WW.W...WW",
     "W................WWW",
     "W.W.WW.WWW.WW.W...WW",
-    "W.W..G.....G..W...WW",
+    "W.W..G.........G..WW",
     "W.WWWW.W.WWWW.W...WW",
     "W.......W........WWW",
     "W.WWWW.W.WWWW.W...WW",
@@ -146,12 +146,21 @@ class Pacman(Character):
     
     def choose_direction(self, walls):
         options = self.possible_directions(walls)
-        straight_ok = any(d == self.dir for d in options)
-        if straight_ok:
+        if not options:
+            return pygame.math.Vector2(0,0)
+        #If only one way to go, take it
+        if len(options) == 1:
+            return options[0]
+        #If can keep going straight, do it
+        #Remove the exact opposite direction to prevent continuos backtracking
+        opposite = pygame.math.Vector2(-self.dir.x, -self.dir.y)
+        options = [d for d in options if d != opposite] or options
+        #At an intersection, prefer straight but sometimes turn
+        straight_options = [d for d in options if d == self.dir]
+        if straight_options and random.random() < 0.7: #70% chance to keep straight
             return self.dir
-        if options:
-            return random.choice(options)
-        return pygame.math.Vector2(0,0)
+        #Otherwise choose remaining options (turn)
+        return random.choice(options) 
     
     def update_ai(self, walls):
         #Decide next direction and move one tile
