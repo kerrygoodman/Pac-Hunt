@@ -181,7 +181,7 @@ class Game:
         self.pacman_step_delay = 200 #ms between
         
         #Game state: "start", "playing", "won", "lost"
-        self.state = "state"
+        self.state = "start"
         self.max_catches_to_win = 3
         
     def reset_round(self):
@@ -234,7 +234,7 @@ class Game:
         self.level.draw(screen)
         self.sprites.draw(screen)
         
-        text = font.pygame.font.render(f"Catches: {self.catches}", True, (255, 255, 255))
+        text = font.render(f"Catches: {self.catches}", True, (255, 255, 255))
         screen.blit(text, (10, 10))
         
         if self.state == "won":
