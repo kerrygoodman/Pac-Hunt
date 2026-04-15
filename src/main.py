@@ -77,6 +77,9 @@ def build_level_from_layout(layout):
 class Level:
     def __init__(self, layout):
         (self.walls, self.pellets, self.ghost_starts, self.pacman_start) = build_level_from_layout(layout)
+        
+        #Save original pellet layout so they can respawn each round
+        self.initial_pellets = list(self.pellets)
     
     def draw(self, screen):
         for wall in self.walls:
@@ -257,6 +260,13 @@ class Game:
         elif self.state == "lost":
             msg = font.render("You LOST! Press R to restart.", True, (255, 0, 0))
             screen.blit(msg, (80, HEIGHT // 2))
+    def reset_round(self):
+        """Reset positions after a catch without resetting score."""
+        self.ghost.rect.topleft = self.level.ghost_starts[0]
+        self.pacman.rect.topleft = self.level.pacman_start
+        self.pacman_timer = 0
+        # Respawn pellets for the new round
+        self.level.pellets = list(self.level.initial_pellets)
             
 
 def main():
