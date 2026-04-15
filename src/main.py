@@ -1,3 +1,5 @@
+from email.mime import image
+
 import pygame
 import os
 import sys
@@ -9,6 +11,12 @@ GAME_PATH = os.path.dirname(os.path.abspath(__file__))
 def get_asset_path(filename: str) -> str:
     '''Returns the path to an asset file, given its filename.'''
     return os.path.join(GAME_PATH, "assets", filename)
+
+def load_sprite(name, size):
+    '''Load an image and scale it to the given size.'''
+    path = get_asset_path(name)
+    image = pygame.image.load(path).convert_alpha()
+    return pygame.transform.scale(image, size)
 
 #Initialize Pygame
 pygame.init()
@@ -91,12 +99,15 @@ class Level:
 class Character(pygame.sprite.Sprite):
     def __init__(self, x, y, color, speed):
         super().__init__()
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        self.image.fill(color)
-        self.rect = self.image.get_rect()
-        self.rect.topleft = (x, y)
-        self.speed = speed
-        self.dir = pygame.math.Vector2(0, 0) #Current Direction
+        if image is None:
+            self.image = pygame.Surface((TILE_SIZE, TILE_SIZE))
+            self.image.fill(color)
+        else:
+            self.image = image
+            self.rect = self.image.get_rect()
+            self.rect.topleft = (x, y)
+            self.speed = speed
+            self.dir = pygame.math.Vector2(0, 0) #Current Direction
         
     def move(self, dx, dy, walls):
         new_rect = self.rect.move(dx * self.speed, dy * self.speed)
@@ -110,6 +121,9 @@ class Character(pygame.sprite.Sprite):
 
 
 class Ghost(Character):
+    def __init__(self, x, y, color, speed):
+        ghost_image = load_sprite("ghost.png", TILE_SIZE)
+        super().__init__(x, y, color, speed, image=ghost_image)
     def handle_input(self, keys, walls):
         dx = dy = 0
         if keys[pygame.K_LEFT]:
@@ -135,7 +149,8 @@ class Ghost(Character):
 
 class Pacman(Character):
     def __init__(self, x, y, color, speed):
-        super().__init__(x, y, color, speed)
+        pacman_image = load_sprite("pacman.png", TILE_SIZE)
+        super().__init__(x, y, color, speed, image=pacman_image)
         self.dir = pygame.math.Vector2(1, 0) #Start moving right
     
     def possible_directions(self,walls):
