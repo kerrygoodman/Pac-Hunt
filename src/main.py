@@ -181,8 +181,8 @@ class Game:
         ghost_start = self.level.ghost_starts[0]
         pac_start = self.level.pacman_start
         
-        self.ghost = Ghost(*ghost_start, GHOST_COLOR, speed=5)
-        self.pacman = Pacman(*pac_start, PACMAN_COLOR, speed=2)
+        self.ghost = Ghost(*ghost_start, GHOST_COLOR, speed=2)
+        self.pacman = Pacman(*pac_start, PACMAN_COLOR, speed=3)
         self.sprites = pygame.sprite.Group(self.ghost, self.pacman)
         
         self.catches = 0
