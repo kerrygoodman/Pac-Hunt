@@ -289,9 +289,6 @@ def main():
                     game.reset_game()
                     
         game.update(dt)
-        # Lose condition: Pac-Man eats all the pellets
-        if not self.level.pellets:
-            self.state = "lost"
         game.draw(screen, font)
         
         pygame.display.flip()
