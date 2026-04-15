@@ -252,61 +252,36 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 24)
 
-    walls, pellets, ghost_starts, pacman_start = build_level_from_layout(MAZE_LAYOUT)
-
-    if not ghost_starts or pacman_start is None:
-        print("Error: Maze layout must have at least one ghost start (G) and one pacman start (P).")
+    try:
+        game = Game()
+    except ValueError as e:
+        print(e)
         pygame.quit()
         sys.exit()
         
-    ghost = Ghost(*ghost_starts[0], GHOST_COLOR, speed=2)
-    pacman = Pacman(*pacman_start, PACMAN_COLOR, speed=2)
-    
-    all_sprites = pygame.sprite.Group(ghost, pacman)
-    
-    catches = 0
     running = True
-    pacman_timer = 0
-    pacman_step_delay = 200 #ms between Pac-Man moves
-    
     while running:
         dt = clock.tick(FPS)
-        pacman_timer += dt
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
                 
-        keys = pygame.key.get_pressed()
-        ghost.handle_input(keys, walls)
-        
-        if pacman_timer >= pacman_step_delay:
-            pacman.update_ai(walls)
-            pacman_timer = 0
-            
-        if ghost.rect.colliderect(pacman.rect):
-            catches += 1 #Reset positions when you catch Pac-Man
-            ghost.rect.topleft = ghost_starts[0]
-            pacman.rect.topleft = pacman_start
-            
-        screen.fill(BG_COLOR)
-        
-        #Draw walls
-        for wall in walls:
-            pygame.draw.rect(screen, (0, 0, 225), wall)
-        
-        #Draw pellets
-        for pellet in pellets:
-            pygame.draw.ellipse(screen, (255, 255, 255), pellet)
-            
-        all_sprites.draw(screen)
-        
-        text = font.render(f"Catches: {catches}", True, (255, 255, 255))
-        screen.blit(text, (10, 10))
+            if event.type == pygame.KEYDOWN:
+                if game.state == "start" and event.key == pygame.K_SPACE:
+                    game.state = "playing"
+                #From won/lost state, allow restart with R key
+                elif game.state in ["won", "lost"] and event.key == pygame.K_r:
+                    game.reset_game()
+                    
+        game.update(dt)
+        game.draw(screen, font)
         
         pygame.display.flip()
         
     pygame.quit()
     sys.exit()
+    
+    
 if __name__ == "__main__":
     main()
