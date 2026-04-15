@@ -161,6 +161,89 @@ class Pacman(Character):
         if not blocked:
             self.rect = new_rect
 
+class Game:
+    """High-level game controller: state, score, and drawing."""
+    
+    def __init__(self):
+        self.level = Level(MAZE_LAYOUT)
+        if not self.level.ghost_starts or self.level.pacman_start is None:
+            raise ValueError("Maze layout must have at least one ghost start (G) and one pacman start (P).")
+        
+        ghost_start = self.level.ghost_starts[0]
+        pac_start = self.level.pacman_start
+        
+        self.ghost = Ghost(*ghost_start, GHOST_COLOR, speed=2)
+        self.pacman = Pacman(*pac_start, PACMAN_COLOR, speed=2)
+        self.sprites = pygame.sprite.Group(self.ghost, self.pacman)
+        
+        self.catches = 0
+        self.pacman_timer = 0
+        self.pacman_step_delay = 200 #ms between
+        
+        #Game state: "start", "playing", "won", "lost"
+        self.state = "state"
+        self.max_catches_to_win = 3
+        
+    def reset_round(self):
+        """Reset positions after a catch without resetting score."""
+        self.ghost.rect.topleft = self.level.ghost_starts[0]
+        self.pacman.rect.topleft = self.level.pacman_start
+        self.pacman_timer = 0
+        
+    def reset_game(self):
+        """Reset entire game: score and positions."""
+        self.catches = 0
+        self.state = "playing"
+        self.reset_round()
+        
+    def update(self, dt):
+        if self.state != "playing":
+            return
+        
+        self.pacman_timer += dt
+        
+        keys = pygame.key.get_pressed()
+        self.ghost.handle_input(keys, self.level.walls)
+        
+        if self.pacman_timer >= self.pacman_step_delay:
+            self.pacman.update_ai(self.level.walls)
+            self.pacman_timer = 0
+            
+        #Collisions: ghost catches Pac-Man
+        if self.ghost.collides_with(self.pacman):
+            self.catches += 1
+            if self.catches >= self.max_catches_to_win:
+                self.state = "won"
+            else:
+                self.reset_round()
+                
+        #Lose condition: Pac-Man eats all pellets
+        if not self.level.pellets:
+            self.state = "lost"
+            
+    def draw(self, screen, font):
+        screen.fill(BG_COLOR)
+        
+        if self.state == "start":
+            title = font.render("Pac-Hunt: Press SPACE to start", True, (255, 255, 255))
+            info = font.render("You are the ghost. Catch Pac-Man!", True, (255, 255, 255))
+            screen.blit(title, (40, HEIGHT // 2 - 20))
+            screen.blit(info, (80, HEIGHT // 2 + 10))
+            return
+        
+        self.level.draw(screen)
+        self.sprites.draw(screen)
+        
+        text = font.pygame.font.render(f"Catches: {self.catches}", True, (255, 255, 255))
+        screen.blit(text, (10, 10))
+        
+        if self.state == "won":
+            msg = font.render("You WON! Press R to restart.", True, (0, 255, 0))
+            screen.blit(msg, (80, HEIGHT // 2))
+        elif self.state == "lost":
+            msg = font.render("You LOST! Press R to restart.", True, (255, 0, 0))
+            screen.blit(msg, (80, HEIGHT // 2))
+            
 
 def main():
     pygame.init()
