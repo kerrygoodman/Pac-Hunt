@@ -56,7 +56,6 @@ def build_level_from_layout(layout):
     
     rows = len(layout)
     cols = len(layout[0])
-    print("Row lengths:", [len(r) for r in layout])
     
     for row in range(rows):
         for col in range(cols):
@@ -74,6 +73,52 @@ def build_level_from_layout(layout):
                 pacman_start = (x, y)
     
     return walls, pellets, ghost_starts, pacman_start
+        
+class Level:
+    def __init__(self, layout):
+        (self.walls, self.pellets, self.ghost_starts, self.pacman_start) = build_level_from_layout(layout)
+    
+    def draw(self, screen):
+        for wall in self.walls:
+            pygame.draw.rect(screen, (0, 0, 225), wall)
+        for pellet in self.pellets:
+            pygame.draw.ellipse(screen, (255, 255, 255), pellet)
+            
+class Game:
+    def __init__(self):
+        self.level = Level(MAZE_LAYOUT)
+        ghost_start = self.level.ghost_starts[0]
+        pac_start = self.level.pacman_start
+        
+        self.ghosts = [Ghost(*ghost_start, GHOST_COLOR, speed=2)]
+        self.pacman = Pacman(*pac_start, PACMAN_COLOR, speed=2)
+        self.catches = 0
+        self.pacman_timer = 0
+        self.pacman_step_delay = 200
+        
+    def update(self, dt):
+        self.pacman_timer += dt
+        
+        keys = pygame.key.get_pressed()
+        self.ghosts[0].handle_input(keys, self.level.walls)
+        
+        if self.pacman_timer >= self.pacman_step_delay:
+            self.pacman.update_ai(self.level.walls)
+            self.pacman_timer = 0
+        if self.ghosts[0].collides_with(self.pacman):
+            self.catches += 1
+            self.ghosts[0].rect.topleft = self.level.ghost_starts[0]
+            self.pacman.rect.topleft = self.level.pacman_start
+            
+    def draw(self, screen, font):
+        screen.fill(BG_COLOR)
+        self.level.draw(screen)
+        self.pacman.draw(screen)
+        for g in self.ghosts:
+            g.draw(screen)
+        
+        text = font.render(f"Catches: {self.catches}", True, (255, 255, 255))
+        screen.blit(text, (10, 10))
         
         
 class Character(pygame.sprite.Sprite):
@@ -93,6 +138,8 @@ class Character(pygame.sprite.Sprite):
             if new_rect.colliderect(wall):
                 return
         self.rect = new_rect
+    def collides_with(self, other):
+        return self.rect.colliderect(other.rect)
 
 
 class Ghost(Character):
@@ -158,57 +205,18 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 24)
 
-    walls, pellets, ghost_starts, pacman_start = build_level_from_layout(MAZE_LAYOUT)
-
-    if not ghost_starts or pacman_start is None:
-        print("Error: Maze layout must have at least one ghost start (G) and one pacman start (P).")
-        pygame.quit()
-        sys.exit()
-        
-    ghost = Ghost(*ghost_starts[0], GHOST_COLOR, speed=2)
-    pacman = Pacman(*pacman_start, PACMAN_COLOR, speed=2)
+    game = Game()
     
-    all_sprites = pygame.sprite.Group(ghost, pacman)
-    
-    catches = 0
     running = True
-    pacman_timer = 0
-    pacman_step_delay = 200 #ms between Pac-Man moves
-    
     while running:
         dt = clock.tick(FPS)
-        pacman_timer += dt
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
                 
-        keys = pygame.key.get_pressed()
-        ghost.handle_input(keys, walls)
-        
-        if pacman_timer >= pacman_step_delay:
-            pacman.update_ai(walls)
-            pacman_timer = 0
-            
-        if ghost.rect.colliderect(pacman.rect):
-            catches += 1 #Reset positions when you catch Pac-Man
-            ghost.rect.topleft = ghost_starts[0]
-            pacman.rect.topleft = pacman_start
-            
-        screen.fill(BG_COLOR)
-        
-        #Draw walls
-        for wall in walls:
-            pygame.draw.rect(screen, (0, 0, 225), wall)
-        
-        #Draw pellets
-        for pellet in pellets:
-            pygame.draw.ellipse(screen, (255, 255, 255), pellet)
-            
-        all_sprites.draw(screen)
-        
-        text = font.render(f"Catches: {catches}", True, (255, 255, 255))
-        screen.blit(text, (10, 10))
+        game.update(dt)
+        game.draw(screen, font)
         
         pygame.display.flip()
         
