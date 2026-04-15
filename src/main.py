@@ -195,12 +195,18 @@ class Game:
         if not self.level.ghost_starts or self.level.pacman_start is None:
             raise ValueError("Maze layout must have at least one ghost start (G) and one pacman start (P).")
         
-        ghost_start = self.level.ghost_starts[0]
+        ghost_start_1 = self.level.ghost_starts[0]
+        ghost_start_2 = self.level.ghost_starts[1] if len(self.level.ghost_starts) > 1 else self.level.ghost_starts[0]
         pac_start = self.level.pacman_start
         
-        self.ghost = Ghost(*ghost_start, GHOST_COLOR, speed=2)
+        self.ghost = [
+            Ghost(*ghost_start_1, GHOST_COLOR, speed=2),
+            Ghost(*ghost_start_2, GHOST_COLOR, speed=2),
+        ]
+        self.active_ghost_index = 0 #Start controlling 1st ghost
         self.pacman = Pacman(*pac_start, PACMAN_COLOR, speed=3)
-        self.sprites = pygame.sprite.Group(self.ghost, self.pacman)
+        
+        self.sprites = pygame.sprite.Group(*self.ghosts, self.pacman)
         
         self.catches = 0
         self.pacman_timer = 0
@@ -311,6 +317,9 @@ def main():
                 #From won/lost state, allow restart with R key
                 elif game.state in ["won", "lost"] and event.key == pygame.K_r:
                     game.reset_game()
+                elif game.state == "playing" and event.key == pygame.K_TAB:
+                    #Switch which ghost is controlled by player
+                    game.active_ghost_index = (game.active_ghost_index + 1) % len(game.ghosts)
                     
         game.update(dt)
         game.draw(screen, font)
